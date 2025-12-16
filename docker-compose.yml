@@ -1,0 +1,102 @@
+version: "3.9"
+
+services:
+  # ---------- CORE SERVICES ----------
+  postgres:
+    image: postgres:15
+    container_name: aura-postgres
+    environment:
+      POSTGRES_USER: aura
+      POSTGRES_PASSWORD: aura
+      POSTGRES_DB: auradb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./data/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+
+  redis:
+    image: redis:7
+    container_name: aura-redis
+    ports:
+      - "6379:6379"
+
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: aura-redpanda
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092
+    ports:
+      - "9092:9092"
+      - "19092:19092"
+
+  minio:
+    image: minio/minio:latest
+    container_name: aura-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  # ---------- BACKEND SERVICES ----------
+  voice-api:
+    build: ./services/voice-api
+    container_name: aura-voice-api
+    env_file: .env
+    environment:
+      REDIS_ADDR: redis:6379
+      POSTGRES_DSN: postgres://aura:aura@postgres:5432/auradb?sslmode=disable
+    depends_on:
+      - redis
+      - redpanda
+      - postgres
+    ports:
+      - "8080:8080"
+
+  rules-engine:
+    build: ./services/rules-engine
+    container_name: aura-rules-engine
+    environment:
+      KAFKA_BROKER: redpanda:9092
+      POSTGRES_DSN: postgres://aura:aura@postgres:5432/auradb?sslmode=disable
+    depends_on:
+      - redpanda
+      - postgres
+    ports:
+      - "8081:8081"
+
+  nlu-dialog:
+    build: ./services/nlu-dialog
+    container_name: aura-nlu-dialog
+    env_file: .env
+    ports:
+      - "8090:8090"
+
+  insights:
+    build: ./services/insights
+    container_name: aura-insights
+    environment:
+      POSTGRES_DSN: postgres://aura:aura@postgres:5432/auradb?sslmode=disable
+      MOCK_TX_PATH: /app/mock_transactions.json
+    volumes:
+      - ./data/mock_transactions.json:/app/mock_transactions.json:ro
+    ports:
+      - "8091:8091"
+
+volumes:
+  pgdata:
+  miniodata:

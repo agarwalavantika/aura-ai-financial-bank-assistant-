@@ -1,0 +1,6 @@
+[
+  {"id":"t1","amount":14.99,"category":"Subscriptions","merchant":"StreamPlus","date":"2025-10-01","used_recently":false},
+  {"id":"t2","amount":62.1,"category":"Dining","merchant":"Cafe Rio","date":"2025-10-28"},
+  {"id":"t3","amount":58.0,"category":"Dining","merchant":"The Grill","date":"2025-10-29"},
+  {"id":"t4","amount":127.0,"category":"Groceries","merchant":"FreshMart","date":"2025-10-26"}
+]

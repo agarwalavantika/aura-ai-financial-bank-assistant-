@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+
+# Node/React (if you add web)
+node_modules/
+dist/
+build/
+
+# Go
+bin/
+*.exe
+
+# General
+.DS_Store
+.git
+.gitignore
